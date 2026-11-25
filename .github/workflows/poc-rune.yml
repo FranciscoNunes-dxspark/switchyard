@@ -1,0 +1,46 @@
+# Builds and tests the Rune proof of concept (poc/rune-term) on Windows, macOS and Linux.
+# Separate from CI: it only runs when the proof of concept changes, or by hand.
+name: Rune proof of concept
+
+on:
+  pull_request:
+    paths: ["poc/rune-term/**", ".github/workflows/poc-rune.yml"]
+  push:
+    branches: [main]
+    paths: ["poc/rune-term/**", ".github/workflows/poc-rune.yml"]
+  workflow_dispatch:
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: poc/rune-term
+    steps:
+      - uses: actions/checkout@v4
+      - name: Linux build dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libxkbcommon-dev libwayland-dev
+      # rust-toolchain.toml pins the toolchain Rune needs; rustup installs it on first use.
+      - name: Toolchain
+        run: rustup show
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: poc/rune-term
+      - name: Build
+        run: cargo build --release
+      - name: Tests (prints the measurements)
+        run: cargo test --release -- --nocapture --test-threads=1
+      # The Windows build to try by hand: the run's Artifacts, "rune-term-windows".
+      - name: Upload the Windows build
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: rune-term-windows
+          path: poc/rune-term/target/release/rune-term.exe
+          if-no-files-found: error
