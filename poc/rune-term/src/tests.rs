@@ -9,7 +9,9 @@ use std::time::{Duration, Instant};
 
 use alacritty_terminal::grid::Dimensions;
 use alacritty_terminal::index::{Column, Line, Point};
-use rune::{Env, Ime, Key, KeyEvent, Mods, Runtime};
+use rune::{Env, Key, KeyEvent, Mods, Runtime};
+#[cfg(unix)]
+use rune::Ime;
 
 use super::*;
 
@@ -71,6 +73,7 @@ fn key(k: Key) -> KeyEvent {
     KeyEvent { key: k, mods: Mods::default() }
 }
 
+#[cfg(unix)]
 fn ctrl_shift(c: char) -> KeyEvent {
     let mods = Mods { ctrl: true, shift: true, cmd: !cfg!(target_os = "macos"), ..Mods::default() };
     KeyEvent { key: Key::Command(c), mods }
@@ -82,6 +85,7 @@ fn percentile(v: &[f64], p: f64) -> f64 {
     v[((v.len() as f64 - 1.0) * p).round() as usize]
 }
 
+#[cfg(unix)]
 fn term_origin(rt: &Runtime<State>) -> (f32, f32) {
     let r = rt.presented("term").expect("the terminal box").0;
     (r[0] + PAD, r[1] + PAD)
@@ -261,14 +265,15 @@ fn windows_output_reaches_the_screen() {
 #[test]
 #[cfg(windows)]
 fn windows_typing() {
-    let mut rt = start("powershell -NoProfile -Command \"$l = Read-Host 'name'; Write-Output ('got: ' + $l); Start-Sleep 20\"");
-    frames_until(&mut rt, Duration::from_secs(30), |s| shows(s, "name"));
+    // No quotes: cmd.exe /C passes them through escaped, and PowerShell then reads a string.
+    let mut rt = start("powershell -NoProfile -Command $l=Read-Host name; Write-Output got:$l; Start-Sleep 20");
+    frames_until(&mut rt, Duration::from_secs(30), |s| shows(s, "name:"));
     for c in ["c", "a", "f", "é"] {
         rt.key(key(Key::Text(c.into())));
         rt.frame(1.0 / 60.0);
     }
     rt.key(key(Key::Enter));
-    frames_until(&mut rt, Duration::from_secs(10), |s| shows(s, "got: café"));
+    frames_until(&mut rt, Duration::from_secs(10), |s| shows(s, "got:café"));
 }
 
 /// A flood of output over ConPTY: all of it arrives and frames stay short.
@@ -276,7 +281,7 @@ fn windows_typing() {
 #[cfg(windows)]
 fn windows_flood() {
     let t = Instant::now();
-    let mut rt = start("powershell -NoProfile -Command \"1..200000\"");
+    let mut rt = start("powershell -NoProfile -Command 1..200000");
     let times = frames_until(&mut rt, Duration::from_secs(120), |s| exited(s) && shows(s, "200000"));
     let st = &rt.state.session.as_ref().unwrap().shared.stats;
     println!(
