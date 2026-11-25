@@ -1,0 +1,27 @@
+[package]
+name = "rune-term"
+version = "0.1.0"
+edition = "2024"
+publish = false
+description = "Proof of concept: one Claude Code session in a Rune window"
+
+[dependencies]
+# Pre-release: Rune is pinned to a dev revision, and every crate it patches is patched below
+# from that same revision (Cargo doesn't inherit a dependency's patches).
+rune = { git = "https://github.com/anomalyco/rune", rev = "41607e99ebe00af9c6e254e260dac6a0c043e76b", features = ["tooling"] }
+alacritty_terminal = { version = "0.26", default-features = false }
+portable-pty = "0.9"
+anyhow = "1"
+
+[patch.crates-io]
+winit = { git = "https://github.com/anomalyco/rune", rev = "41607e99ebe00af9c6e254e260dac6a0c043e76b" }
+sctk-adwaita = { git = "https://github.com/anomalyco/rune", rev = "41607e99ebe00af9c6e254e260dac6a0c043e76b" }
+parley_engine = { git = "https://github.com/anomalyco/rune", rev = "41607e99ebe00af9c6e254e260dac6a0c043e76b" }
+wgpu-hal = { git = "https://github.com/anomalyco/rune", rev = "41607e99ebe00af9c6e254e260dac6a0c043e76b" }
+naga = { git = "https://github.com/anomalyco/rune", rev = "41607e99ebe00af9c6e254e260dac6a0c043e76b" }
+accesskit_windows = { git = "https://github.com/anomalyco/rune", rev = "41607e99ebe00af9c6e254e260dac6a0c043e76b" }
+accesskit_macos = { git = "https://github.com/anomalyco/rune", rev = "41607e99ebe00af9c6e254e260dac6a0c043e76b" }
+accesskit_atspi_common = { git = "https://github.com/anomalyco/rune", rev = "41607e99ebe00af9c6e254e260dac6a0c043e76b" }
+
+[profile.release]
+debug = 1
