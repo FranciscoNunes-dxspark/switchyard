@@ -173,6 +173,17 @@ impl Session {
             }
         })?;
 
+        // The program's exit is watched on its own: on Windows, ConPTY doesn't end the output
+        // stream when the program exits, so a reader waiting for that end would wait forever.
+        let s = shared.clone();
+        let wake = waker.clone();
+        std::thread::Builder::new().name("pty-child".into()).spawn(move || {
+            let _ = child.wait();
+            s.exited.store(true, Ordering::Release);
+            s.dirty.store(true, Ordering::Release);
+            wake();
+        })?;
+
         let s = shared.clone();
         let reply = input.clone();
         std::thread::Builder::new().name("pty-reader".into()).spawn(move || {
@@ -200,10 +211,6 @@ impl Session {
                 s.dirty.store(true, Ordering::Release);
                 waker();
             }
-            let _ = child.wait();
-            s.exited.store(true, Ordering::Release);
-            s.dirty.store(true, Ordering::Release);
-            waker();
         })?;
 
         Ok(Session { shared, input, master: pty.master, events, size, title: None, bells: 0 })
