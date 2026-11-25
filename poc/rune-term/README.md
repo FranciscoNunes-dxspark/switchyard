@@ -41,11 +41,25 @@ Styles, colours and wide characters:
 
 ![Styles](docs/styles.png)
 
+### Windows and macOS (GitHub Actions runners, `poc-rune.yml`)
+
+| Check | macOS (Apple silicon) | Windows (ConPTY) |
+| --- | --- | --- |
+| Build | passes | passes (MSVC) |
+| Typing during a flood | 32.1 MB; typed line intact; frames p50 1.7 ms, p95 4.2 ms, max 9.9 ms | — |
+| 400,000 lines | on screen after 0.95 s | — |
+| Select, scrollback, resize, paste, accents, status protocol | all pass | — |
+| Output reaches the screen | passes | passes |
+| Typing with accents (`café` into PowerShell's `Read-Host`) | — | passes |
+| 200,000-line flood from PowerShell | — | all arrives; frames p95 3.4 ms, max 32 ms; 60 s end to end, set by PowerShell writing line by line through ConPTY (1.4 MB) |
+
+Windows found one bug, now fixed: ConPTY doesn't end the output stream when the program exits,
+so the program's exit is watched on its own thread (as Switchyard's backend does).
+
 ## What's not proven yet
 
-- **Windows and macOS.** Nothing here ran on them. The workflow builds and tests on both, with
-  Windows checks over ConPTY (output, typing with accents, a 200,000-line flood). It needs a
-  pull request (or the workflow on `main`) to run.
+- **A real Windows desktop.** The runners have no display; the window, the GPU path (D3D12) and
+  real keyboard input on Windows are untested.
 - **Status reports from real Claude Code.** The protocol works against a scripted program; an idle
   Claude Code sent none in this container, and none was sent a prompt here.
 - **Fonts.** `⎿` had no glyph in this container's fonts, and `⏺` / `⏸` fell back to colour emoji.
