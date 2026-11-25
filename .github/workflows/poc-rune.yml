@@ -36,3 +36,11 @@ jobs:
         run: cargo build --release
       - name: Tests (prints the measurements)
         run: cargo test --release -- --nocapture --test-threads=1
+      # The Windows build to try by hand: the run's Artifacts, "rune-term-windows".
+      - name: Upload the Windows build
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: rune-term-windows
+          path: poc/rune-term/target/release/rune-term.exe
+          if-no-files-found: error
